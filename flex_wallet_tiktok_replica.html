@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flex Wallet Replica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Ukrywanie paska przewijania dla czystego wyglądu aplikacji */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        body {
+            background-color: #0f0f11;
+            margin: 0;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .phone-container {
+            width: 100%;
+            height: 100%;
+            background-color: #0f0f11;
+            position: relative;
+            overflow: hidden;
+        }
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0f0f11;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+        .view.active {
+            transform: translateX(0);
+        }
+        .view.previous {
+            transform: translateX(-30%);
+            opacity: 0.5;
+        }
+        .purple-pill {
+            background-color: rgba(171, 159, 242, 0.15);
+            color: #ab9ff2;
+        }
+        .glass-panel {
+            background-color: #1c1c1e;
+            border-radius: 16px;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="text-white select-none">
+
+    <div class="phone-container">
+        <!-- ================= EKRAN GŁÓWNY (HOME) ================= -->
+        <div id="view-home" class="view active z-10">
+            <!-- Nawigacja górna -->
+            <div class="flex justify-center mt-2">
+                <div class="bg-[#1c1c1e] rounded-full p-1 flex text-sm font-semibold">
+                    <div class="purple-pill rounded-full px-5 py-1.5 cursor-pointer">Home</div>
+                    <div class="text-gray-400 px-5 py-1.5 cursor-pointer hover:text-gray-200">Trade</div>
+                    <div class="text-gray-400 px-5 py-1.5 cursor-pointer hover:text-gray-200 flex items-center justify-center" onclick="toggleFullScreen()" title="Pełny ekran (Fullscreen)">
+                        <i class="fa-solid fa-expand"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nagłówek i Balans -->
+            <div class="px-5 mt-6">
+                <div class="flex items-center text-gray-400 text-sm mb-1 cursor-pointer" onclick="openSettings()">
+                    Flex Wallet <i class="fa-solid fa-chevron-down ml-1 text-[10px]"></i>
+                </div>
+                <div class="text-[40px] font-bold tracking-tight leading-none mb-2" id="main-balance">
+                    $95,855.50
+                </div>
+                <div class="inline-block bg-green-900/30 text-green-400 text-xs font-bold px-2 py-1 rounded-md" id="main-pnl">
+                    +$2,104.99
+                </div>
+            </div>
+
+            <!-- Przyciski akcji -->
+            <div class="flex gap-3 px-5 mt-6">
+                <div class="glass-panel flex-1 flex flex-col items-center justify-center py-3 cursor-pointer">
+                    <i class="fa-solid fa-money-bill-wave text-[#ab9ff2] text-xl mb-1"></i>
+                    <span class="text-sm font-semibold">Cash</span>
+                </div>
+                <div class="glass-panel flex-1 flex flex-col items-center justify-center py-3 cursor-pointer">
+                    <div class="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center mb-1">
+                        <i class="fa-solid fa-dollar-sign text-xs"></i>
+                    </div>
+                    <span class="text-sm font-semibold">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Lista Tokenów -->
+            <div class="px-5 mt-8">
+                <h2 class="text-xl font-bold mb-4 flex items-center">Tokens <i class="fa-solid fa-chevron-right ml-2 text-sm text-gray-500"></i></h2>
+                <div id="tokens-list" class="flex flex-col gap-4 pb-20">
+                    <!-- Tokeny będą generowane przez JS -->
+                </div>
+            </div>
+
+            <!-- Pasek dolny (Search / Menu) - atrapa -->
+            <div class="fixed bottom-0 left-0 w-full bg-[#0f0f11]/90 backdrop-blur-md pb-8 pt-4 px-5 border-t border-[#1c1c1e] z-20">
+                <div class="glass-panel flex items-center px-4 py-3 text-gray-400">
+                    <i class="fa-solid fa-magnifying-glass mr-3"></i>
+                    <span class="text-sm">Search Phantom</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= EKRAN USTAWIEŃ (SETTINGS) ================= -->
+        <div id="view-settings" class="view z-30">
+            <div class="px-5 pt-2 pb-4 sticky top-0 bg-[#0f0f11] z-10 border-b border-[#1c1c1e] flex items-center justify-between">
+                <div class="w-8"></div> <!-- spacer -->
+                <h1 class="text-lg font-bold">Settings</h1>
+                <div class="w-8 h-8 rounded-full bg-[#1c1c1e] flex items-center justify-center cursor-pointer" onclick="closeSettings()">
+                    <i class="fa-solid fa-times text-gray-400"></i>
+                </div>
+            </div>
+
+            <div class="px-5 mt-4 space-y-6">
+                <!-- Profil -->
+                <div class="glass-panel p-4">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-[#ab9ff2] flex items-center justify-center text-2xl">
+                            👻
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">Name</div>
+                            <div class="font-bold">Flex Wallet</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edycja Balansów -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase">Balances (Edit to flex)</h3>
+                    <div class="glass-panel p-4 space-y-4" id="settings-inputs">
+                        <!-- Inputy generowane przez JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zapisz -->
+            <div class="fixed bottom-0 left-0 w-full bg-[#0f0f11] p-5 border-t border-[#1c1c1e]">
+                <button onclick="saveSettings()" class="w-full bg-[#ab9ff2] text-black font-bold py-4 rounded-xl text-lg hover:bg-[#978ae6] transition-colors">
+                    Save
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= EKRAN SZCZEGÓŁÓW MONETY (COIN) ================= -->
+        <div id="view-coin" class="view z-20 bg-[#0f0f11]">
+            <!-- Header -->
+            <div class="px-5 pt-2 flex justify-between items-center">
+                <div class="w-8 h-8 flex items-center justify-center cursor-pointer" onclick="closeCoinView()">
+                    <i class="fa-solid fa-arrow-left text-xl"></i>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="flex items-center gap-1 font-bold">
+                        <i class="fa-brands fa-bitcoin text-[#F7931A]"></i> Bitcoin <i class="fa-solid fa-circle-check text-blue-500 text-xs"></i>
+                    </div>
+                    <div class="text-xs text-gray-400 flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div> 87 people here
+                    </div>
+                </div>
+                <div class="w-8 h-8 glass-panel flex items-center justify-center rounded-full">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </div>
+            </div>
+
+            <!-- Cena i wykres -->
+            <div class="px-5 mt-8">
+                <div class="text-[32px] font-bold" id="coin-detail-price">$64,557.00</div>
+                <div class="text-red-500 text-sm font-semibold mb-6 flex items-center gap-1">
+                    -$996.06 (1.52%) <span class="text-gray-500 ml-1">Today</span>
+                </div>
+
+                <!-- Atrapa wykresu (Czerwony spadkowy z wideo) -->
+                <div class="w-full h-40 relative mb-6">
+                    <svg viewBox="0 0 100 40" class="w-full h-full" preserveAspectRatio="none">
+                        <polyline fill="none" stroke="#ef4444" stroke-width="2" points="0,5 10,15 20,10 30,25 40,20 50,35 60,30 70,38 80,32 90,39 100,35"/>
+                    </svg>
+                </div>
+
+                <!-- Interwały czasowe -->
+                <div class="flex justify-between text-xs font-bold text-gray-500 mb-8 px-2">
+                    <span class="cursor-pointer hover:text-white">1H</span>
+                    <span class="cursor-pointer hover:text-white">1D</span>
+                    <span class="cursor-pointer hover:text-white">1W</span>
+                    <span class="cursor-pointer hover:text-white">1M</span>
+                    <span class="cursor-pointer hover:text-white">YTD</span>
+                    <span class="text-white bg-[#1c1c1e] px-2 py-1 rounded-md cursor-pointer">ALL</span>
+                </div>
+
+                <!-- Karta Pozycji -->
+                <h3 class="text-lg font-bold mb-3">Position</h3>
+                <div class="glass-panel p-4 flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-[#F7931A]/20 flex items-center justify-center">
+                            <i class="fa-brands fa-bitcoin text-[#F7931A] text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-400">Value</div>
+                            <div class="font-bold text-lg" id="coin-detail-value">$322,785.00</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-400">Balance</div>
+                        <div class="font-bold text-lg" id="coin-detail-balance">5 BTC</div>
+                    </div>
+                </div>
+
+                <!-- Przyciski akcji (Send/Receive) -->
+                <div class="flex gap-3 mt-6 pb-10">
+                    <button class="flex-1 bg-[#1c1c1e] text-white font-bold py-3 rounded-xl hover:bg-[#2c2c2e] transition-colors">
+                        Receive
+                    </button>
+                    <button class="flex-1 bg-[#ab9ff2] text-black font-bold py-3 rounded-xl hover:bg-[#978ae6] transition-colors">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STAN APLIKACJI (Zgodnie z danymi z wideo) ---
+        
+        // Ceny krypto wyliczone na podstawie wartości z wideo
+        // 30 ETH = $95,855.50 -> ~3195.18 za ETH
+        // 5 BTC = $322,785.00 -> ~64557.00 za BTC
+        const cryptoData = [
+            { id: 'BTC', name: 'Bitcoin', price: 64557.00, change: -996.06, changePct: -1.52, icon: 'fa-brands fa-bitcoin', color: '#F7931A', bg: 'bg-orange-500/20' },
+            { id: 'ETH', name: 'Ethereum', price: 3195.18, change: 2104.99, changePct: 2.2, icon: 'fa-brands fa-ethereum', color: '#627EEA', bg: 'bg-blue-500/20' },
+            { id: 'SOL', name: 'Solana', price: 145.20, change: -2.10, changePct: -1.4, icon: 'fa-solid fa-bolt', color: '#14F195', bg: 'bg-green-400/20' },
+            { id: 'MONAD', name: 'Monad', price: 1.20, change: 0, changePct: 0, icon: 'fa-solid fa-m', color: '#8b5cf6', bg: 'bg-purple-500/20' },
+            { id: 'SUI', name: 'Sui', price: 1.50, change: 0, changePct: 0, icon: 'fa-solid fa-water', color: '#3b82f6', bg: 'bg-blue-500/20' }
+        ];
+
+        // Początkowe balanse użytkownika (stan w 0:00 sekundzie wideo)
+        let userBalances = {
+            'BTC': 0,
+            'ETH': 30, // Powoduje początkowe $95,855.50
+            'SOL': 0,
+            'MONAD': 0,
+            'SUI': 0
+        };
+
+        // --- FUNKCJE POMOCNICZE ---
+
+        function formatCurrency(value) {
+            return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // --- RENDEROWANIE INTERFEJSU ---
+
+        function renderHome() {
+            const tokensList = document.getElementById('tokens-list');
+            tokensList.innerHTML = '';
+            let totalValue = 0;
+
+            // Sortowanie tokenów: Posiadane na górze (jak w prawdziwym portfelu)
+            const sortedData = [...cryptoData].sort((a, b) => {
+                const valA = a.price * userBalances[a.id];
+                const valB = b.price * userBalances[b.id];
+                return valB - valA;
+            });
+
+            sortedData.forEach(coin => {
+                const amount = userBalances[coin.id];
+                const value = amount * coin.price;
+                totalValue += value;
+
+                const changeColor = coin.change >= 0 ? 'text-green-400' : 'text-red-500';
+                const changeSign = coin.change > 0 ? '+' : '';
+                
+                // Generowanie wiersza tokena
+                const tokenHTML = `
+                    <div class="glass-panel p-4 flex items-center justify-between cursor-pointer hover:bg-[#252528] transition-colors" 
+                         onclick="openCoinView('${coin.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full ${coin.bg} flex items-center justify-center">
+                                <i class="${coin.icon} text-xl" style="color: ${coin.color}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold flex items-center gap-1">
+                                    ${coin.name} <i class="fa-solid fa-circle-check text-blue-500 text-[10px]"></i>
+                                </div>
+                                <div class="text-sm text-gray-400">${amount} ${coin.id}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold">${formatCurrency(value)}</div>
+                            <div class="text-sm font-semibold ${changeColor}">
+                                ${changeSign}${formatCurrency(coin.change)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                tokensList.innerHTML += tokenHTML;
+            });
+
+            // Aktualizacja Głównego Balansu
+            document.getElementById('main-balance').innerText = formatCurrency(totalValue);
+        }
+
+        function renderSettings() {
+            const inputsContainer = document.getElementById('settings-inputs');
+            inputsContainer.innerHTML = '';
+
+            cryptoData.forEach(coin => {
+                const inputHTML = `
+                    <div class="border-b border-gray-800 pb-3 last:border-0 last:pb-0">
+                        <label class="text-xs font-bold text-gray-400 flex items-center gap-2 mb-2">
+                            <i class="${coin.icon}" style="color: ${coin.color}"></i> ${coin.name} (${coin.id})
+                        </label>
+                        <div class="bg-[#0f0f11] rounded-lg p-3 flex justify-between items-center border border-transparent focus-within:border-[#ab9ff2] transition-colors">
+                            <span class="text-xs text-gray-500 w-16">Amount</span>
+                            <input type="number" id="input-${coin.id}" 
+                                   class="bg-transparent text-white w-full text-right outline-none font-bold text-lg" 
+                                   value="${userBalances[coin.id]}">
+                        </div>
+                    </div>
+                `;
+                inputsContainer.innerHTML += inputHTML;
+            });
+        }
+
+        // --- OBSŁUGA ZDARZEŃ I NAWIGACJA ---
+
+        function openSettings() {
+            renderSettings();
+            document.getElementById('view-settings').classList.add('active');
+            document.getElementById('view-home').classList.add('previous');
+        }
+
+        function closeSettings() {
+            document.getElementById('view-settings').classList.remove('active');
+            document.getElementById('view-home').classList.remove('previous');
+        }
+
+        function saveSettings() {
+            // Zapisz nowe wartości z inputów do stanu
+            cryptoData.forEach(coin => {
+                const inputVal = document.getElementById(`input-${coin.id}`).value;
+                userBalances[coin.id] = parseFloat(inputVal) || 0;
+            });
+            
+            // Przeładuj widok główny i zamknij ustawienia
+            renderHome();
+            closeSettings();
+        }
+
+        function openCoinView(coinId) {
+            // W wideo użytkownik wchodzi tylko w Bitcoin, więc tu pokazujemy logikę dla wybranej monety
+            if(coinId !== 'BTC') {
+                // Dla zachowania prostoty i wierności wideo, blokujemy kliknięcie w inne monety 
+                // lub pokazujemy ich dane, ale wideo skupia się na BTC.
+                // Pozwalamy otworzyć, ale zaktualizujemy UI dla BTC z wideo.
+            }
+            
+            const coin = cryptoData.find(c => c.id === coinId);
+            const amount = userBalances[coin.id];
+            const value = amount * coin.price;
+
+            // Ustaw dane na karcie (Dla uproszczenia repliki, używam statycznego HTML dla nagłówka BTC, 
+            // ale aktualizuję wartości na karcie pozycji z wideo)
+            document.getElementById('coin-detail-value').innerText = formatCurrency(value);
+            document.getElementById('coin-detail-balance').innerText = `${amount} ${coin.id}`;
+
+            document.getElementById('view-coin').classList.add('active');
+            document.getElementById('view-home').classList.add('previous');
+        }
+
+        function closeCoinView() {
+            document.getElementById('view-coin').classList.remove('active');
+            document.getElementById('view-home').classList.remove('previous');
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Błąd podczas próby włączenia pełnego ekranu: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // --- INICJALIZACJA ---
+        window.onload = () => {
+            renderHome();
+        };
+
+    </script>
+</body>
+</html>
